@@ -162,13 +162,26 @@
         </section>
       </div>
 
+      
+      <!-- Charts -->
+      <section class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+          <h3 class="font-semibold mb-2">By Category</h3>
+          <canvas id="catChart" height="140"></canvas>
+        </div>
+        <div class="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+          <h3 class="font-semibold mb-2">Spending Over Time</h3>
+          <canvas id="dayChart" height="140"></canvas>
+        </div>
+      </section>
+
       <!-- Total (global) -->
       <div class="mb-3 mt-6">
         <span class="text-sm text-slate-300 mr-2">Total:</span>
         <span
           class="inline-block rounded-xl border border-slate-700 bg-slate-800 px-3 py-1 font-semibold"
         >
-          £{{ "%2.f"|format(total) or 0}}
+          £{{ "%.2f"|format(total) or 0}}
         </span>
       </div>
 
@@ -230,17 +243,6 @@
         </div>
       </section>
 
-      <!-- Charts -->
-      <section class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-          <h3 class="font-semibold mb-2">By Category</h3>
-          <canvas id="catChart" height="140"></canvas>
-        </div>
-        <div class="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-          <h3 class="font-semibold mb-2">Spending Over Time</h3>
-          <canvas id="dayChart" height="140"></canvas>
-        </div>
-      </section>
     </main>
   </body>
   <script>
