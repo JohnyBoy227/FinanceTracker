@@ -243,4 +243,21 @@
       </section>
     </main>
   </body>
+  <script>
+    const catLables = {{(cat_labels or []) | tojson}};
+    const catValues = {{(cat_values or []) | tojson}};
+
+    if (document.getElementById('catChart')) {
+      const catCtx = document.getElementById('catChart').getContext('2d')
+
+      new Chart(catCtx, {
+        type: 'pie',
+        data: {lables: catLables, datasets: [{data: catValues}]},
+        options: {plugins: {legend: {lables: {color: '#cbd5e1'}}}}
+      });
+    }
+
+
+
+  </script>
 </html>
