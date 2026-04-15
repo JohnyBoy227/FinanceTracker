@@ -35,6 +35,7 @@ def index():
 
     start_date_str = (request.args.get("start-input") or "").strip()
     end_date_str = (request.args.get("end-input") or "").strip()
+    selected_category = (request.args.get("category-input") or "").strip()
 
     start_date = parse_date_or_none(start_date_str)
     end_date = parse_date_or_none(end_date_str)
@@ -50,6 +51,9 @@ def index():
     if end_date:
         q = q.filter(Expense.date <= end_date)
 
+    if selected_category:
+        q = q.filter(Expense.category == selected_category)
+
     expenses = q.order_by(Expense.date.desc(), Expense.id.desc()).all()
 
     total = sum(e.amount for e in expenses)
@@ -60,7 +64,8 @@ def index():
                            total=total,
                            start_str=start_date_str,
                            end_str=end_date_str,
-                           today=date.today().isoformat()
+                           today=date.today().isoformat(),
+                           selected_category=selected_category
                            )
 
 @app.route("/add", methods=['POST'])

@@ -54,12 +54,16 @@
             <label class="text-sm md:col-span-2">
               <span class="block mb-1 text-slate-300">Category</span>
               <select
+                name="category-input"
                 class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100"
               >
                 <option value="">All</option>
-                <option>Food</option>
-                <option>Transport</option>
-                <option>Utilities</option>
+
+                {% for c in categories %}
+
+                <option value="{{c}}" {%if selected_category == c%} selected {%endif%}>{{c}}</option>
+
+                {% endfor %}
               </select>
             </label>
             <div class="flex gap-2">
@@ -71,7 +75,7 @@
               </button>
               <a
                 class="rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-2 border border-slate-700"
-                href="#"
+                href="{{url_for('index')}}"
                 >Reset</a
               >
             </div>
@@ -83,7 +87,7 @@
             <span
               class="inline-block rounded-xl border border-slate-700 bg-slate-800 px-3 py-1 font-semibold"
             >
-              £0
+              £{{ '%.2f'|format(total or 0)}}
             </span>
           </div>
 
@@ -130,6 +134,7 @@
                 <input
                   name="date-input"
                   type="date"
+                  value="{{today}}"
                   class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100"
                 />
               </label>
