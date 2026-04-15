@@ -2,12 +2,16 @@ from flask import Flask, render_template, request, url_for, make_response, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import date, datetime
 from sqlalchemy import func
+import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///expenses.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'my-secret-key'
+load_dotenv()
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+#app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv("DB_SECRET_KEY")
 db = SQLAlchemy(app)
 
 class Expense(db.Model):
@@ -83,32 +87,34 @@ def index():
     if selected_category:
         day_q = day_q.filter(Expense.category == selected_category)
 
-    day_rows = day_q.group_by(Expense.category).order_by(Expense.date).all()
+    day_rows = day_q.group_by(Expense.date).order_by(Expense.date).all()
     day_labels = [d.isoformat() for d, _ in day_rows]
     day_values = [round(float(s or 0), 2) for _, s in day_rows]
 
-
-    return render_template("index.html", 
-                           expenses=expenses,
-                           categories=CATEGORIES,
-                           total=total,
-                           start_str=start_date_str,
-                           end_str=end_date_str,
-                           today=date.today().isoformat(),
-                           selected_category=selected_category,
-                           cat_labels=cat_labels,
-                           cat_values=cat_values,
-                           day_labels=day_labels,
-                           day_values=day_values
-                           )
+    return render_template(
+        "index.html", 
+        expenses=expenses,
+        categories=CATEGORIES,
+        total=total,
+        start_str=start_date_str,
+        end_str=end_date_str,
+        today=date.today().isoformat(),
+        selected_category=selected_category,
+        cat_labels=cat_labels,
+        cat_values=cat_values,
+        day_labels=day_labels,
+        day_values=day_values
+    )
 
 @app.route("/add", methods=['POST'])
 def add_expense():
 
-    description =  (request.form.get("description-input") or "").strip()
-    amount_str =  (request.form.get("amount-input") or "").strip()
-    category =  (request.form.get("category-input") or "").strip()
-    date_str =  (request.form.get("date-input") or "").strip()
+    description = (request.form.get("description-input") or "").strip()
+    amount_str = (request.form.get("amount-input") or "").strip()
+    category = (request.form.get("category-input") or "").strip()
+    date_str = (request.form.get("date-input") or "").strip()
+
+    print(date_str)
 
     if not description or not amount_str or not category:
         flash("Please fill all inputs")
@@ -124,10 +130,11 @@ def add_expense():
         return redirect(url_for("index"))
     
     try:
-        d = datetime.strptime(date_str, "%d-%m-%Y").date()
-    
+        d = datetime.strptime(date_str, "%Y-%m-%d").date()
+        print("date:", d)
     except ValueError:
         d = date.today()
+        print("date is today")
 
     e = Expense(description=description, amount=amount, category=category, date=d)
     db.session.add(e)

@@ -1,2 +1,4 @@
 data
 instance
+.env
+__pycache__
