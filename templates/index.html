@@ -244,16 +244,39 @@
     </main>
   </body>
   <script>
-    const catLables = {{(cat_labels or []) | tojson}};
+    const catLabels = {{(cat_labels or []) | tojson}};
     const catValues = {{(cat_values or []) | tojson}};
+    const dayLabels = {{(day_labels or []) | tojson}};
+    const dayValues = {{(day_values or []) | tojson}};
 
     if (document.getElementById('catChart')) {
       const catCtx = document.getElementById('catChart').getContext('2d')
 
       new Chart(catCtx, {
         type: 'pie',
-        data: {lables: catLables, datasets: [{data: catValues}]},
-        options: {plugins: {legend: {lables: {color: '#cbd5e1'}}}}
+        data: {labels: catLabels, datasets: [{data: catValues}]},
+        options: {plugins: {legend: {labels: {color: '#cbd5e1'}}}}
+      });
+    }
+
+    if (document.getElementById('dayChart')) {
+      const dayCtx = document.getElementById('dayChart').getContext('2d')
+
+      new Chart(dayCtx, {
+        type: 'bar',
+        data: {
+          labels: dayLabels, datasets: [{
+            label: 'Total',
+            data: dayValues
+          }]
+        },
+        options: {
+          plugins :{legend: {labels: {color: '#676767'}}},
+          scales: {
+            x: { ticks: {color: '#cbd5e1'}, grid: {color: '#444444'}},
+            y: { ticks: {color: '#cbd5e1'}, grid: {color: '#444444'}}
+          }
+        }
       });
     }
 
