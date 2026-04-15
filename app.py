@@ -69,8 +69,14 @@ def add_expense():
     flash("Expense added", "Success")
     return redirect(url_for("index"))
 
-    print("Form recienved:", dict(request.form))
-    return make_response("Form recieved check console")
+@app.route("/delete/<int:expense_id>", methods=['POST'])
+def delete(expense_id):
+    e = Expense.query.get_or_404(expense_id)
+    db.session.delete(e)
+    db.session.commit()
+    flash("Expense deleted", "Success")
+    return redirect(url_for("index"))
+
 
 
 if __name__ == "__main__":
