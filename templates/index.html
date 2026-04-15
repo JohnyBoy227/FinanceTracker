@@ -29,10 +29,15 @@
           class="lg:col-span-2 rounded-2xl border border-slate-800 bg-slate-900 p-4"
         >
           <h2 class="text-lg font-semibold mb-3">Filters</h2>
-          <form class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end pr-5">
+          <form 
+            method="GET"
+            action="{{url_for('index')}}"
+            class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end pr-5">
             <label class="text-sm">
               <span class="block mb-1 text-slate-300">Start</span>
               <input
+                name="start-input"
+                value="{{start_str or ''}}"
                 type="date"
                 class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100"
               />
@@ -40,6 +45,8 @@
             <label class="text-sm">
               <span class="block mb-1 text-slate-300">End</span>
               <input
+                name="end-input"
+                value="{{end_str or ''}}"
                 type="date"
                 class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100"
               />

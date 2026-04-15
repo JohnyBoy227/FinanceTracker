@@ -22,17 +22,45 @@ with app.app_context():
 
 CATEGORIES = {"Food", "Bills", "Transport", "Random"}
 
+def parse_date_or_none(str):
+    if not str:
+        return None
+    try:
+        return datetime.strptime(str, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
 @app.route("/")
 def index():
 
-    expenses = Expense.query.order_by(Expense.date.desc(), Expense.id.desc()).all()
+    start_date_str = (request.args.get("start-input") or "").strip()
+    end_date_str = (request.args.get("end-input") or "").strip()
+
+    start_date = parse_date_or_none(start_date_str)
+    end_date = parse_date_or_none(end_date_str)
+
+    if start_date and end_date and end_date < start_date:
+        flash("End date cannot be before start date")
+        start_date = end_date = None
+        start_date_str = end_date_str = ""
+
+    q = Expense.query
+    if start_date:
+        q = q.filter(Expense.date >= start_date)
+    if end_date:
+        q = q.filter(Expense.date <= end_date)
+
+    expenses = q.order_by(Expense.date.desc(), Expense.id.desc()).all()
 
     total = sum(e.amount for e in expenses)
 
     return render_template("index.html", 
                            expenses=expenses,
                            categories=CATEGORIES,
-                           total=total
+                           total=total,
+                           start_str=start_date_str,
+                           end_str=end_date_str,
+                           today=date.today().isoformat()
                            )
 
 @app.route("/add", methods=['POST'])
@@ -57,7 +85,7 @@ def add_expense():
         return redirect(url_for("index"))
     
     try:
-        d = datetime.strptime(date_str, "%Y-%m-%d").date()
+        d = datetime.strptime(date_str, "%d-%m-%Y").date()
     
     except ValueError:
         d = date.today()
