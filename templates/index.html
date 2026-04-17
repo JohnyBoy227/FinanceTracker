@@ -161,7 +161,7 @@
         </section>
       </div>
 
-      <a href="{{url_for('edit_categories')}}">edit categories</a>
+      <a href="{{url_for('categories')}}">View categories</a>
       
       <!-- Charts -->
       <section class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -226,11 +226,11 @@
                     py-1
                     rounded-lg
                     "
-                    href="{{url_for('edit', expense_id=e.id)}}">EDIT</a>
+                    href="{{url_for('edit_expense_get', expense_id=e.id)}}">EDIT</a>
 
                     <form
                       method="POST"
-                      action="{{url_for('delete', expense_id=e.id)}}"
+                      action="{{url_for('delete_expense', expense_id=e.id)}}"
                       onsublit="return confirm('Are you sure you want to delete?')">
                       <button class="text-rose-300 hover:text-rose-200 text-xs border border-rose-400/30 px-3 py-1 rounded-lg">
                         DELETE

@@ -115,9 +115,8 @@ def index():
         day_values=day_values
     )
 
-@app.route("/add", methods=['POST'])
+@app.route("/expenses/add", methods=['POST'])
 def add_expense():
-
     description = (request.form.get("description-input") or "").strip()
     amount_str = (request.form.get("amount-input") or "").strip()
     category_name = (request.form.get("category-input") or "").strip()
@@ -146,21 +145,20 @@ def add_expense():
     flash("Expense added", "Success")
     return redirect(url_for("index"))
 
-@app.route("/delete/<int:expense_id>", methods=['POST'])
-def delete(expense_id):
+@app.route("/expenses/delete/<int:expense_id>", methods=['POST'])
+def delete_expense(expense_id):
     e = Expense.query.get_or_404(expense_id)
     db.session.delete(e)
     db.session.commit()
     flash("Expense deleted", "Success")
     return redirect(url_for("index"))
 
-@app.route("/edit/<int:expense_id>", methods=['GET'])
-def edit(expense_id):
+@app.route("/expenses/edit/<int:expense_id>", methods=['GET'])
+def edit_expense_get(expense_id):
     e = Expense.query.get_or_404(expense_id)
-
     return render_template("edit.html", expense=e, categories=get_categories())
 
-@app.route("/edit/<int:expense_id>", methods=['POST'])
+@app.route("/expenses/edit/<int:expense_id>", methods=['POST'])
 def edit_expense(expense_id):
     e = Expense.query.get_or_404(expense_id)
 
@@ -189,39 +187,36 @@ def edit_expense(expense_id):
     e.amount = amount
     e.category = cat_obj
     e.date = d
-
     db.session.commit()
 
     flash("Expense edited", "Success")
     return redirect(url_for("index"))
 
-@app.route("/edit_categories", methods=['GET'])
-def edit_categories():
+@app.route("/categories", methods=['GET'])
+def categories():
     return render_template("categories.html", categories=get_categories())
 
-@app.route("/add_category", methods=['POST'])
+@app.route("/categories/add", methods=['POST'])
 def add_category():
-
     name = (request.form.get("name-input") or "").strip()
-
     if not name:
         flash("Please fill name")
-        return redirect(url_for("edit_categories"))
+        return redirect(url_for("categories"))
 
     c = Category(name=name)
     db.session.add(c)
     db.session.commit()
 
     flash("Category added", "Success")
-    return redirect(url_for("edit_categories"))
+    return redirect(url_for("categories"))
 
-@app.route("/delete_cat/<int:category_id>", methods=['POST'])
+@app.route("/categories/delete/<int:category_id>", methods=['POST'])
 def delete_category(category_id):
     c = Category.query.get_or_404(category_id)
     db.session.delete(c)
     db.session.commit()
     flash("Category deleted", "Success")
-    return redirect(url_for("edit_categories"))
+    return redirect(url_for("categories"))
 
 if __name__ == "__main__":
     app.run(debug=True)

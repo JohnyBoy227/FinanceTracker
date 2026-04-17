@@ -17,9 +17,6 @@
       <div class="flex items-center gap-2">
         <button class="rounded-xl bg-brand/20 hover:bg-brand/30 text-brand px-4 py-2 border border-brand/30"
                 type="submit">Add</button>
-
-        <a class="rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-2 border border-slate-700"
-           href="{{ url_for('index') }}">Cancel</a>
       </div>
     </form>
   </section>
@@ -37,11 +34,8 @@
               </tr>
             </thead>
             <tbody>
-
               {% if categories %}
-
               {% for c in categories %}
-
               <tr class="border-t border-slate-800 hover:bg-slate-800/30">
                 <td class="px-4 py-2">{{c.name}}</td>
                 <td class="px-4 py-2 text-right">
@@ -59,11 +53,8 @@
                   
                 </td>
               </tr>
-
               {% endfor%}
-
               {% else %}
-
               <tr>
                 <td colspan="5" class="px-4 py-6 text-center text-slate-400">
                   No categories yet — add your first one above.
