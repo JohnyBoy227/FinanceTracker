@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Edit Categories · Expense Tracker{% endblock %}
+
+{% block content %}
+  <h1 class="text-3xl font-semibold mb-2">Edit Categories</h1>
+  <p class="text-slate-400 mb-6">Update the fields and save your changes.</p>
+
+  <section class="max-w-xl rounded-2xl border border-slate-800 bg-slate-900 p-4">
+    <form method="post" action="{{ url_for('add_category') }}" class="space-y-3">
+      <label class="block text-sm">
+        <span class="mb-1 block text-slate-300">Name</span>
+        <input name="name-input"
+               value=""
+               class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100" />
+      </label>
+
+      <div class="flex items-center gap-2">
+        <button class="rounded-xl bg-brand/20 hover:bg-brand/30 text-brand px-4 py-2 border border-brand/30"
+                type="submit">Add</button>
+
+        <a class="rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-2 border border-slate-700"
+           href="{{ url_for('index') }}">Cancel</a>
+      </div>
+    </form>
+  </section>
+        <!-- Categories table -->
+      <section class="rounded-2xl border border-slate-800 bg-slate-900">
+        <div class="px-4 py-3 border-b border-slate-800">
+          <h2 class="text-lg font-semibold">Categories</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="text-slate-300 bg-slate-800/50">
+              <tr>
+                <th class="text-left px-4 py-3">Name</th>
+                <th class="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+
+              {% if categories %}
+
+              {% for c in categories %}
+
+              <tr class="border-t border-slate-800 hover:bg-slate-800/30">
+                <td class="px-4 py-2">{{c.name}}</td>
+                <td class="px-4 py-2 text-right">
+                  <div class="inline-flex gap-2">
+
+                    <form
+                      method="POST"
+                      action="{{url_for('delete_category', category_id=c.id)}}"
+                      onsubmit="return confirm('Are you sure you want to delete?')">
+                      <button class="text-rose-300 hover:text-rose-200 text-xs border border-rose-400/30 px-3 py-1 rounded-lg">
+                        DELETE
+                      </button>
+                    </form>
+                  </div>
+                  
+                </td>
+              </tr>
+
+              {% endfor%}
+
+              {% else %}
+
+              <tr>
+                <td colspan="5" class="px-4 py-6 text-center text-slate-400">
+                  No categories yet — add your first one above.
+                </td>
+              </tr>
+
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+{% endblock %}

@@ -35,8 +35,7 @@ with app.app_context():
     db.create_all()
 
 def get_categories():
-    print("Categories:", db.session.query(Category.name).all())
-    return db.session.query(Category.name).all()
+    return Category.query.all()
 
 def parse_date_or_none(str):
     if not str:
@@ -196,7 +195,33 @@ def edit_expense(expense_id):
     flash("Expense edited", "Success")
     return redirect(url_for("index"))
 
+@app.route("/edit_categories", methods=['GET'])
+def edit_categories():
+    return render_template("categories.html", categories=get_categories())
 
+@app.route("/add_category", methods=['POST'])
+def add_category():
+
+    name = (request.form.get("name-input") or "").strip()
+
+    if not name:
+        flash("Please fill name")
+        return redirect(url_for("edit_categories"))
+
+    c = Category(name=name)
+    db.session.add(c)
+    db.session.commit()
+
+    flash("Category added", "Success")
+    return redirect(url_for("edit_categories"))
+
+@app.route("/delete_cat/<int:category_id>", methods=['POST'])
+def delete_category(category_id):
+    c = Category.query.get_or_404(category_id)
+    db.session.delete(c)
+    db.session.commit()
+    flash("Category deleted", "Success")
+    return redirect(url_for("edit_categories"))
 
 if __name__ == "__main__":
     app.run(debug=True)
