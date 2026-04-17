@@ -37,7 +37,7 @@
         <select name="category-input"
                 class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100">
           {% for c in categories %}
-            <option value="{{ c }}" {% if expense.category == c %}selected{% endif %}>{{ c }}</option>
+            <option value="{{c.name}}" {% if expense.category.name == c.name %}selected{% endif %}>{{c.name}}</option>
           {% endfor %}
         </select>
       </label>

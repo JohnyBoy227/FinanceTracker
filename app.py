@@ -4,6 +4,7 @@ from datetime import date, datetime
 from sqlalchemy import func
 import os
 from dotenv import load_dotenv
+from flask_migrate import Migrate
 
 app = Flask(__name__)
 
@@ -13,19 +14,29 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 #app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv("DB_SECRET_KEY")
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 class Expense(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     description = db.Column(db.String(120), nullable = False)
     amount = db.Column(db.Float, nullable = False)
-    category = db.Column(db.String(50), nullable = False, default="Uncategorised")
+    #category = db.Column(db.String(50), nullable = False, default="Uncategorised")
     date = db.Column(db.Date, nullable = False, default=date.today)
 
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(120), nullable = False)
+    
+    expenses = db.relationship('Expense', backref='category')
 
 with app.app_context():
     db.create_all()
 
-CATEGORIES = {"Food", "Bills", "Transport", "Random"}
+def get_categories():
+    print("Categories:", db.session.query(Category.name).all())
+    return db.session.query(Category.name).all()
 
 def parse_date_or_none(str):
     if not str:
@@ -57,23 +68,22 @@ def index():
         q = q.filter(Expense.date <= end_date)
 
     if selected_category:
-        q = q.filter(Expense.category == selected_category)
+        q = q.join(Category).filter(Category.name == selected_category)
 
     expenses = q.order_by(Expense.date.desc(), Expense.id.desc()).all()
-
     total = sum(e.amount for e in expenses)
 
     # pie chart
-    cat_q = db.session.query(Expense.category, func.sum(Expense.amount))
+    cat_q = db.session.query(Category.name, func.sum(Expense.amount)).join(Expense, Expense.category_id == Category.id)
 
     if start_date:
         cat_q = cat_q.filter(Expense.date >= start_date)
     if end_date:
         cat_q = cat_q.filter(Expense.date <= end_date)
     if selected_category:
-        cat_q = cat_q.filter(Expense.category == selected_category)
+        cat_q = cat_q.filter(Category.name == selected_category)
 
-    cat_rows = cat_q.group_by(Expense.category).all()
+    cat_rows = cat_q.group_by(Category.name).all()
     cat_labels = [c for c, _ in cat_rows]
     cat_values = [round(float(s or 0), 2) for _, s in cat_rows]
 
@@ -81,11 +91,11 @@ def index():
     day_q = db.session.query(Expense.date, func.sum(Expense.amount))
 
     if start_date:
-        dat_q = day_q.filter(Expense.date >= start_date)
+        day_q = day_q.filter(Expense.date >= start_date)
     if end_date:
         day_q = day_q.filter(Expense.date <= end_date)
     if selected_category:
-        day_q = day_q.filter(Expense.category == selected_category)
+        day_q = day_q.join(Category).filter(Category.name == selected_category)
 
     day_rows = day_q.group_by(Expense.date).order_by(Expense.date).all()
     day_labels = [d.isoformat() for d, _ in day_rows]
@@ -94,7 +104,7 @@ def index():
     return render_template(
         "index.html", 
         expenses=expenses,
-        categories=CATEGORIES,
+        categories=get_categories(),
         total=total,
         start_str=start_date_str,
         end_str=end_date_str,
@@ -111,11 +121,16 @@ def add_expense():
 
     description = (request.form.get("description-input") or "").strip()
     amount_str = (request.form.get("amount-input") or "").strip()
-    category = (request.form.get("category-input") or "").strip()
+    category_name = (request.form.get("category-input") or "").strip()
     date_str = (request.form.get("date-input") or "").strip()
 
-    if not description or not amount_str or not category:
+    if not description or not amount_str or not category_name:
         flash("Please fill all inputs")
+        return redirect(url_for("index"))
+
+    cat_obj = Category.query.filter_by(name=category_name).first()
+    if not cat_obj:
+        flash(f"Category '{category_name}' does not exist", "error")
         return redirect(url_for("index"))
 
     amount = float(amount_str)
@@ -125,7 +140,7 @@ def add_expense():
     except ValueError:
         d = date.today()
 
-    e = Expense(description=description, amount=amount, category=category, date=d)
+    e = Expense(description=description, amount=amount, category=cat_obj, date=d)
     db.session.add(e)
     db.session.commit()
 
@@ -144,7 +159,7 @@ def delete(expense_id):
 def edit(expense_id):
     e = Expense.query.get_or_404(expense_id)
 
-    return render_template("edit.html", expense=e, categories=CATEGORIES)
+    return render_template("edit.html", expense=e, categories=get_categories())
 
 @app.route("/edit/<int:expense_id>", methods=['POST'])
 def edit_expense(expense_id):
@@ -152,11 +167,16 @@ def edit_expense(expense_id):
 
     description = (request.form.get("description-input") or "").strip()
     amount_str = (request.form.get("amount-input") or "").strip()
-    category = (request.form.get("category-input") or "").strip()
+    category_name = (request.form.get("category-input") or "").strip()
     date_str = (request.form.get("date-input") or "").strip()
 
-    if not description or not amount_str or not category:
+    if not description or not amount_str or not category_name:
         flash("Please fill all inputs", "error")
+        return redirect(url_for("edit", expense_id=expense_id))
+    
+    cat_obj = Category.query.filter_by(name=category_name).first()
+    if not cat_obj:
+        flash(f"Category '{category_name}' does not exist", "error")
         return redirect(url_for("edit", expense_id=expense_id))
     
     amount = float(amount_str)
@@ -168,7 +188,7 @@ def edit_expense(expense_id):
     
     e.description = description
     e.amount = amount
-    e.category = category
+    e.category = cat_obj
     e.date = d
 
     db.session.commit()

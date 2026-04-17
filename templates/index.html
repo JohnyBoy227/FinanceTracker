@@ -61,7 +61,7 @@
 
                 {% for c in categories %}
 
-                <option value="{{c}}" {%if selected_category == c%} selected {%endif%}>{{c}}</option>
+                <option value="{{c.name}}" {%if selected_category == c.name%} selected {%endif%}>{{c.name}}</option>
 
                 {% endfor %}
               </select>
@@ -146,7 +146,7 @@
               >
                 {% for c in categories %}
 
-                <option value="{{c}}">{{c}}</option>
+                <option value="{{c.name}}">{{c.name}}</option>
 
                 {% endfor %}
               </select>
@@ -209,7 +209,7 @@
               <tr class="border-t border-slate-800 hover:bg-slate-800/30">
                 <td class="px-4 py-2">{{e.date.strftime("%d-%m-%Y") if e.date else ''}}</td>
                 <td class="px-4 py-2">{{e.description}}</td>
-                <td class="px-4 py-2">{{e.category}}</td>
+                <td class="px-4 py-2">{{e.category.name}}</td>
                 <td class="px-4 py-2 text-right">£{{ '%.2f'|format(e.amount)}}</td>
                 <td class="px-4 py-2 text-right">
 
