@@ -114,27 +114,16 @@ def add_expense():
     category = (request.form.get("category-input") or "").strip()
     date_str = (request.form.get("date-input") or "").strip()
 
-    print(date_str)
-
     if not description or not amount_str or not category:
         flash("Please fill all inputs")
         return redirect(url_for("index"))
 
-    try:
-        amount = float(amount_str)
-        if amount <= 0:
-            raise ValueError
-
-    except ValueError:
-        flash("amount must be a postitive number", )
-        return redirect(url_for("index"))
+    amount = float(amount_str)
     
     try:
         d = datetime.strptime(date_str, "%Y-%m-%d").date()
-        print("date:", d)
     except ValueError:
         d = date.today()
-        print("date is today")
 
     e = Expense(description=description, amount=amount, category=category, date=d)
     db.session.add(e)
@@ -149,6 +138,42 @@ def delete(expense_id):
     db.session.delete(e)
     db.session.commit()
     flash("Expense deleted", "Success")
+    return redirect(url_for("index"))
+
+@app.route("/edit/<int:expense_id>", methods=['GET'])
+def edit(expense_id):
+    e = Expense.query.get_or_404(expense_id)
+
+    return render_template("edit.html", expense=e, categories=CATEGORIES)
+
+@app.route("/edit/<int:expense_id>", methods=['POST'])
+def edit_expense(expense_id):
+    e = Expense.query.get_or_404(expense_id)
+
+    description = (request.form.get("description-input") or "").strip()
+    amount_str = (request.form.get("amount-input") or "").strip()
+    category = (request.form.get("category-input") or "").strip()
+    date_str = (request.form.get("date-input") or "").strip()
+
+    if not description or not amount_str or not category:
+        flash("Please fill all inputs", "error")
+        return redirect(url_for("edit", expense_id=expense_id))
+    
+    amount = float(amount_str)
+    
+    try:
+        d = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        d = date.today()
+    
+    e.description = description
+    e.amount = amount
+    e.category = category
+    e.date = d
+
+    db.session.commit()
+
+    flash("Expense edited", "Success")
     return redirect(url_for("index"))
 
 
