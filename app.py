@@ -224,6 +224,16 @@ def add_category():
 @app.route("/categories/delete/<int:category_id>", methods=['POST'])
 def delete_category(category_id):
     c = Category.query.get_or_404(category_id)
+    
+    for e in c.expenses:
+        e.category = None
+
+    for children in c.children:
+        children.parent_id = None
+    
+    for rule in c.rules:
+        db.session.delete(rule)
+    
     db.session.delete(c)
     db.session.commit()
     flash("Category deleted", "Success")
