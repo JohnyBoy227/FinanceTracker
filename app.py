@@ -31,6 +31,14 @@ class Expense(db.Model):
 
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
 
+class Category_Rule(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    pattern = db.Column(db.String(120), nullable=False)
+    priority = db.Column(db.Integer, nullable=False, default=0)
+
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    category = db.relationship('Category', backref='rules')
+
 with app.app_context():
     db.create_all()
 

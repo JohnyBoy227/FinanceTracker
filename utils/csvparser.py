@@ -21,6 +21,7 @@ class Category(Base):
     parent = relationship("Category", back_populates="children", remote_side="Category.id")
     children = relationship("Category", back_populates="parent")
     expenses = relationship("Expense", back_populates="category")
+    rules = relationship("Rule", back_populates="category")
 
 class Expense(Base):
     __tablename__ = "expense"
@@ -32,6 +33,16 @@ class Expense(Base):
     category_id = Column(Integer, ForeignKey('category_id'))
 
     category = relationship("Category", back_populates="expenses")
+
+class Rule(Base):
+    __tablename__ = "rule"
+
+    id = Column(Integer, primary_key=True)
+    pattern = Column(String(120), nullable=False)
+    priority = Column(Integer, nullable=False, default=0)
+
+    category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
+    category = relationship("Category", back_populates="rules")
 
 Base.metadata.create_all(engine)
 

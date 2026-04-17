@@ -21,6 +21,7 @@ class Category(Base):
     parent = relationship("Category", back_populates="children", remote_side="Category.id")
     children = relationship("Category", back_populates="parent")
     expenses = relationship("Expense", back_populates="category")
+    rules = relationship("Rule", back_populates="category")
 
 class Expense(Base):
     __tablename__ = "expense"
@@ -33,38 +34,37 @@ class Expense(Base):
 
     category = relationship("Category", back_populates="expenses")
 
+class Rule(Base):
+    __tablename__ = "rule"
+
+    id = Column(Integer, primary_key=True)
+    pattern = Column(String(120), nullable=False)
+    priority = Column(Integer, nullable=False, default=0)
+
+    category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
+    category = relationship("Category", back_populates="rules")
+
 Base.metadata.create_all(engine)
 
-def apply_category(description):
-    if "aldi" in description.casefold():
-        return "Food"
-    elif "tesco" in description.casefold():
-        return "Food"
-    elif "sainsburys" in description.casefold():
-        return "Food"
-    else:
-        return "uncategorised"
+def apply_category(description, session):
+    rules = session.query(Rule).order_by(Rule.priority.desc()).all()
+    
+    for rule in rules:
+        if rule.pattern.casefold() in description.casefold():
+            return rule.category
+    
+    return None
 
 with Session() as session:
-    query = (
-        session.query(Expense)
-        .outerjoin(Category)
-        .filter(or_(Category.name == "", Category.name == "uncategorised", Expense.category_id == None))
-    )
+    query = (session.query(Expense).filter(Expense.category_id == None))
     
     print(query.count(), "uncategorised expenses found")
 
     for expense in query:
-        new_category_name = apply_category(expense.description)
-        category = session.query(Category).filter_by(name=new_category_name).first()
-        if not category:
-            print("Category name not found - adding new category:", new_category_name)
-            category = Category(name=new_category_name)
-            session.add(category)
-            session.flush()
-        expense.category = category
+        category = apply_category(expense.description, session)
+        if category:
+            expense.category = category
+        else:
+            print("No rule matched:", expense.description)
 
     session.commit()
-
-
-
