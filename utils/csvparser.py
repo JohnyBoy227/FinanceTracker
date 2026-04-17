@@ -1,5 +1,5 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Date
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import create_engine, Column, Integer, String, Float, Date, ForeignKey
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import date, datetime
 from dotenv import load_dotenv
 import os
@@ -17,8 +17,18 @@ class Expense(Base):
     id = Column(Integer, primary_key=True)
     description = Column(String(120), nullable=False)
     amount = Column(Float, nullable=False)
-    category = Column(String(50), nullable=False, default="Uncategorised")
     date = Column(Date, nullable=False, default=date.today)
+    category_id = Column(Integer, ForeignKey('category_id'))
+
+    category = relationship("Category", back_populates="expenses")
+
+class Category(Base):
+    __tablename__ = "category"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(120), nullable=False)
+
+    expenses = relationship("Expense", back_populates="category")
 
 Base.metadata.create_all(engine)
 
