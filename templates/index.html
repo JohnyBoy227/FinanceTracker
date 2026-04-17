@@ -90,16 +90,6 @@
               £{{ '%.2f'|format(total or 0)}}
             </span>
           </div>
-
-          <!-- Export link -->
-          <div class="mt-3">
-            <a
-              class="text-xs text-slate-400 hover:text-brand underline"
-              href="#"
-            >
-              Export CSV (current filter)
-            </a>
-          </div>
         </section>
 
         <!-- Add Expense -->
@@ -162,6 +152,7 @@
       </div>
 
       <a href="{{url_for('categories')}}">View categories</a>
+      <a href="{{url_for('rules')}}">View rules</a>
       
       <!-- Charts -->
       <section class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">

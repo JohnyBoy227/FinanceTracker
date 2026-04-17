@@ -31,7 +31,7 @@ class Expense(db.Model):
 
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
 
-class Category_Rule(db.Model):
+class Rule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     pattern = db.Column(db.String(120), nullable=False)
     priority = db.Column(db.Integer, nullable=False, default=0)
@@ -44,6 +44,9 @@ with app.app_context():
 
 def get_categories():
     return Category.query.all()
+
+def get_rules():
+    return Rule.query.all()
 
 def parse_date_or_none(str):
     if not str:
@@ -225,6 +228,64 @@ def delete_category(category_id):
     db.session.commit()
     flash("Category deleted", "Success")
     return redirect(url_for("categories"))
+
+@app.route("/rules", methods=['GET'])
+def rules():
+    return render_template("rules.html", rules=get_rules(), categories=get_categories())
+
+@app.route("/rules/add", methods=['POST'])
+def add_rule():
+    pattern = (request.form.get("pattern-input") or "").strip()
+    priority = (request.form.get("priority-input") or "").strip()
+    category_name = (request.form.get("category-input") or "").strip()
+    if not pattern or not priority or not category_name:
+        flash("Please fill all inputs")
+        return redirect(url_for("rules"))
+
+    category_obj = Category.query.filter_by(name=category_name).first()
+
+    r = Rule(pattern=pattern, priority=priority, category=category_obj)
+    db.session.add(r)
+    db.session.commit()
+
+    flash("Rule added", "Success")
+    return redirect(url_for("rules"))
+
+@app.route("/rules/delete/<int:rule_id>", methods=['POST'])
+def delete_rule(rule_id):
+    r = Rule.query.get_or_404(rule_id)
+    db.session.delete(r)
+    db.session.commit()
+    flash("Rule deleted", "Success")
+    return redirect(url_for("rules"))
+
+@app.route("/rules/apply", methods=['POST'])
+def apply_rules():
+    def apply_category(description):
+        rules = db.session.query(Rule).order_by(Rule.priority.desc()).all()
+        
+        for rule in rules:
+            if rule.pattern.casefold() in description.casefold():
+                return rule.category
+        return None
+
+    expenses = Expense.query.filter(Expense.category_id == None)
+    
+    print(expenses.count(), "uncategorised expenses found")
+
+    matched = 0
+    for expense in expenses:
+        category = apply_category(expense.description)
+        if category:
+            expense.category = category
+            matched += 1
+        else:
+            print("No rule matched:", expense.description)
+
+    db.session.commit()
+
+    flash(f"{matched} expenses categorised")
+    return redirect(url_for('rules'))
 
 if __name__ == "__main__":
     app.run(debug=True)
