@@ -11,25 +11,25 @@ app = Flask(__name__)
 load_dotenv()
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
-#app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv("DB_SECRET_KEY")
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(120), nullable = False)
+    parent_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=True)
+
+    parent = db.relationship("Category", backref="children", remote_side="Category.id")
+    expenses = db.relationship('Expense', backref='category')
 
 class Expense(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     description = db.Column(db.String(120), nullable = False)
     amount = db.Column(db.Float, nullable = False)
-    #category = db.Column(db.String(50), nullable = False, default="Uncategorised")
     date = db.Column(db.Date, nullable = False, default=date.today)
 
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
-
-class Category(db.Model):
-    id = db.Column(db.Integer, primary_key = True)
-    name = db.Column(db.String(120), nullable = False)
-    
-    expenses = db.relationship('Expense', backref='category')
 
 with app.app_context():
     db.create_all()

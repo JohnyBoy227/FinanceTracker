@@ -16,7 +16,10 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(120), nullable=False)
+    parent_id = Column(Integer, ForeignKey('category.id'), nullable=True)
 
+    parent = relationship("Category", back_populates="children", remote_side="Category.id")
+    children = relationship("Category", back_populates="parent")
     expenses = relationship("Expense", back_populates="category")
 
 class Expense(Base):
