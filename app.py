@@ -205,8 +205,27 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
+    token_query = User.query.filter(User.email == email).first()
+
+    if token_query is None:
+        flash("User does not exist")
+        return redirect(url_for('login'))
+
+    if not token_query.check_password(password=password):
+        flash("Password incorect")
+        return redirect(url_for('login'))
+    
+    access_token = create_access_token(identity=str(token_query.id))
+    
+    response = make_response(redirect(url_for('index')))
+    response.set_cookie(
+        'access_token_cookie',
+        access_token,
+        httponly=True,
+        samesite='Lax',
+    )
     flash("Registration sucessful", "Success")
-    return redirect(url_for("login"))
+    return response
 
 @app.route("/login", methods=['GET','POST'])
 def login():
