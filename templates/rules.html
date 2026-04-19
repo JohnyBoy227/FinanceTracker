@@ -1,100 +1,75 @@
 {% extends "base.html" %}
-{% block title %}Edit rules · Expense Tracker{% endblock %}
+{% block title %}Edit Rules · Expense Tracker{% endblock %}
 
 {% block content %}
-  <h1 class="text-3xl font-semibold mb-2">Edit rules</h1>
-  <p class="text-slate-400 mb-6">Update the fields and save your changes.</p>
+  <h1>Edit Rules</h1>
+  <p class="subtitle">Add pattern-based rules to auto-categorise expenses.</p>
 
-  <section class="max-w-xl rounded-2xl border border-slate-800 bg-slate-900 p-4">
-    <form method="post" action="{{url_for('add_rule') }}" class="space-y-3">
-      <div>
-        <label class="block text-sm">
-          <span class="mb-1 block text-slate-300">Pattern</span>
-          <input name="pattern-input"
-                value=""
-                class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100" />
-        </label>
-        <label class="block text-sm">
-          <span class="mb-1 block text-slate-300">Priority</span>
-          <input name="priority-input"
-                type="number"
-                max="10"
-                min="0"
-                step="1"
-                value="0"
-                class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100" />
-        </label>
-        <select
-          name="category-input"
-          class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100"
-        >
+  <section class="card form-section">
+    <form method="post" action="{{ url_for('add_rule') }}" class="form-stack">
+      <label>
+        <span class="field-label">Pattern</span>
+        <input name="pattern-input" type="text" value="" />
+      </label>
+      <label>
+        <span class="field-label">Priority</span>
+        <input name="priority-input" type="number" min="0" max="10" step="1" value="0" />
+      </label>
+      <label>
+        <span class="field-label">Category</span>
+        <select name="category-input">
           {% for c in categories %}
-
-          <option value="{{c.name}}" {%if selected_category == c.name%} selected {%endif%}>{{c.name}}</option>
-
+            <option value="{{ c.name }}" {% if selected_category == c.name %}selected{% endif %}>{{ c.name }}</option>
           {% endfor %}
         </select>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <button class="rounded-xl bg-brand/20 hover:bg-brand/30 text-brand px-4 py-2 border border-brand/30"
-                type="submit">Add</button>
+      </label>
+      <div class="form-actions">
+        <button class="btn btn-brand" type="submit">Add</button>
       </div>
     </form>
   </section>
 
   <form method="POST" action="{{ url_for('apply_rules') }}">
-    <button type="submit" class="text-indigo-400 hover:text-indigo-300 underline bg-transparent border-none cursor-pointer">
-      Categorise
-    </button>
+    <button class="btn-link" type="submit">Categorise</button>
   </form>
 
-        <!-- Rules table -->
-      <section class="rounded-2xl border border-slate-800 bg-slate-900">
-        <div class="px-4 py-3 border-b border-slate-800">
-          <h2 class="text-lg font-semibold">Rules</h2>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="min-w-full text-sm">
-            <thead class="text-slate-300 bg-slate-800/50">
-              <tr>
-                <th class="text-left px-4 py-3">Pattern</th>
-                <th class="text-left px-4 py-3">Category</th>
-                <th class="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% if rules %}
-              {% for r in rules %}
-              <tr class="border-t border-slate-800 hover:bg-slate-800/30">
-                <td class="px-4 py-2">{{r.pattern}}</td>
-                <td class="px-4 py-2">{{r.category.name}}</td>
-                <td class="px-4 py-2 text-right">
-                  <div class="inline-flex gap-2">
-
-                    <form
-                      method="POST"
-                      action="{{url_for('delete_rule', rule_id=r.id)}}"
-                      onsubmit="return confirm('Are you sure you want to delete?')">
-                      <button class="text-rose-300 hover:text-rose-200 text-xs border border-rose-400/30 px-3 py-1 rounded-lg">
-                        DELETE
-                      </button>
-                    </form>
-                  </div>
-                  
-                </td>
-              </tr>
-              {% endfor%}
-              {% else %}
-              <tr>
-                <td colspan="5" class="px-4 py-6 text-center text-slate-400">
-                  No rules yet — add your first one above.
-                </td>
-              </tr>
-
-              {% endif %}
-            </tbody>
-          </table>
-        </div>
-      </section>
+  <section class="table-section">
+    <div class="table-header">
+      <h2>Rules</h2>
+    </div>
+    <div class="overflow-x">
+      <table>
+        <thead>
+          <tr>
+            <th>Pattern</th>
+            <th>Category</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if rules %}
+            {% for r in rules %}
+            <tr>
+              <td>{{ r.pattern }}</td>
+              <td>{{ r.category.name }}</td>
+              <td class="right">
+                <div class="action-group">
+                  <form class="delete-form" method="POST"
+                        action="{{ url_for('delete_rule', rule_id=r.id) }}"
+                        onsubmit="return confirm('Are you sure you want to delete?')">
+                    <button class="btn-delete" type="submit">DELETE</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+          <tr class="empty-row">
+            <td colspan="3">No rules yet — add your first one above.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </section>
 {% endblock %}

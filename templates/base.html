@@ -1,44 +1,51 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}Expense Tracker Lite{% endblock %}</title>
-
-    <!-- Tailwind CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: { extend: { colors: { brand: { DEFAULT: "#38bdf8" } } } },
-      };
-    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
     {% block head_extra %}{% endblock %}
   </head>
-  <body class="h-full bg-slate-900 text-slate-100">
-    <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur">
-      <div class="mx-auto max-w-6xl px-4 py-4">
-        <a href="{{url_for('index')}}" class="text-xl font-bold tracking-tight">
-          <span class="text-brand">Expense</span> Tracker
-        </a>
-      </div>
-    </header>
-
-    <main class="mx-auto max-w-6xl px-4 py-8">
-      <!-- Flash messages -->
-      {% with messages = get_flashed_messages(with_categories=true) %} {% if
-      messages %}
-      <div class="space-y-2 mb-4">
-        {% for category, message in messages %}
-        <div
-          class="rounded-xl px-4 py-3 text-sm {% if category == 'success' %} bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 {% elif category == 'error' %} bg-rose-500/10 text-rose-300 border border-rose-400/20 {% else %} bg-slate-800 text-slate-200 border border-slate-700 {% endif %}"
-        >
-          {{ message }}
+  <body>
+    <nav id="sidebar">
+      <ul>
+        <li>
+          <a href="{{ url_for('index') }}">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M240-200h133.85v-237.69h212.3V-200H720v-360L480-740.77 240-560v360Zm-60 60v-450l300-225.77L780-590v450H526.15v-237.69h-92.3V-140H180Zm300-330.38Z"/></svg>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('categories') }}">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M100-160v-289.23h289.23V-160H100Zm60-60h169.23v-169.23H160V-220Zm92.31-360 192.31-315.38L636.92-580H252.31Zm105.84-60h172.93l-86.46-139.08L358.15-640ZM863.77-64.31 758.54-169.54q-19.85 14.38-43.58 21.96-23.73 7.58-50.34 7.58-68.85 0-116.73-47.89Q500-235.77 500-304.62q0-68.84 47.89-116.73 47.88-47.88 116.73-47.88 68.84 0 116.73 47.88 47.88 47.89 47.88 116.73 0 26-7.58 49.54-7.57 23.54-20.96 43.39l105.23 105.23-42.15 42.15ZM738.89-230.35q30.34-30.34 30.34-74.27 0-43.92-30.34-74.27-30.35-30.34-74.27-30.34-43.93 0-74.27 30.34Q560-348.54 560-304.62q0 43.93 30.35 74.27Q620.69-200 664.62-200q43.92 0 74.27-30.35ZM329.23-389.23ZM444.62-640Z"/></svg>
+            <span>Categories</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('rules') }}">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M295.23-283.08q-38.23 31.92-79.65 28.92-41.43-3-71.96-28.3-30.54-25.31-41.5-66.39-10.96-41.07 14.96-84.07l76.54-126.7Q169-579.69 154.5-609.23 140-638.77 140-673.08q0-61 42.96-103.96Q225.92-820 286.92-820q61 0 103.96 42.96 42.97 42.96 42.97 103.96 0 61-42.97 103.96-42.96 42.97-103.96 42.97-10.53 0-20.69-1.39-10.15-1.38-19.31-4.54l-78.15 130.77q-12.54 20.69-7.77 40.69 4.77 20 19.7 32.53 14.94 12.52 35.62 14.23 20.68 1.71 39.99-14.22l408.84-349.46q37.77-31.92 79.16-28.8 41.38 3.11 72.4 28.4 31.01 25.29 41.96 66.38 10.94 41.1-15.36 84.48L766.38-400q24.62 20.08 39.12 49.35 14.5 29.26 14.5 63.73 0 61-43.24 103.96Q733.52-140 672.8-140q-60.72 0-103.68-43.16-42.97-43.16-42.97-103.77t43.05-103.76q43.05-43.16 103.49-43.16 10.6 0 20.61 1.58t19.16 4.73l78.77-131.15q12.54-20.69 7.95-40.67-4.59-19.98-19.5-32.54-14.91-12.56-35.6-14.45-20.7-1.88-40 14.43L295.23-283.08Zm53.19-328.5q25.43-25.42 25.43-61.5 0-36.07-25.43-61.5Q323-760 286.92-760q-36.07 0-61.5 25.42Q200-709.15 200-673.08q0 36.08 25.42 61.5 25.43 25.43 61.5 25.43 36.08 0 61.5-25.43Zm385.92 386.16Q760-250.85 760-286.92q0-36.08-25.66-61.5-25.66-25.43-61.69-25.43-36.04 0-61.27 25.43-25.23 25.42-25.23 61.5 0 36.07 25.23 61.5Q636.61-200 672.65-200q36.03 0 61.69-25.42ZM286.92-673.08Zm386.16 386.16Z"/></svg>
+            <span>Rules</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+    <main>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-list">
+          {% for category, message in messages %}
+          <div class="flash {% if category == 'success' %}flash-success{% elif category == 'error' %}flash-error{% else %}flash-info{% endif %}">
+            {{ message }}
+          </div>
+          {% endfor %}
         </div>
-        {% endfor %}
-      </div>
-      {% endif %} {% endwith %} {% block content %}{% endblock %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
     </main>
+
     {% block body_end %}{% endblock %}
   </body>
 </html>

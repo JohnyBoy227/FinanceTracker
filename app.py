@@ -78,7 +78,10 @@ def index():
         q = q.filter(Expense.date <= end_date)
 
     if selected_category:
-        q = q.join(Category).filter(Category.name == selected_category)
+        if selected_category == "None":
+            q = q.join(Category).filter(Category.name.is_(None))
+        else:
+            q = q.join(Category).filter(Category.name == selected_category)
 
     expenses = q.order_by(Expense.date.desc(), Expense.id.desc()).all()
     total = sum(e.amount for e in expenses)

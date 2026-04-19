@@ -2,52 +2,41 @@
 {% block title %}Edit Expense · Expense Tracker{% endblock %}
 
 {% block content %}
-  <h1 class="text-3xl font-semibold mb-2">Edit Expense</h1>
-  <p class="text-slate-400 mb-6">Update the fields and save your changes.</p>
+  <h1>Edit Expense</h1>
+  <p class="subtitle">Update the fields and save your changes.</p>
 
-  <section class="max-w-xl rounded-2xl border border-slate-800 bg-slate-900 p-4">
-    <form method="post" action="{{ url_for('edit_expense', expense_id=expense.id) }}" class="space-y-3">
-      <label class="block text-sm">
-        <span class="mb-1 block text-slate-300">Description</span>
-        <input name="description-input"
-               value="{{ expense.description }}"
-               class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100" />
+  <section class="card form-section">
+    <form method="post" action="{{ url_for('edit_expense', expense_id=expense.id) }}" class="form-stack">
+      <label>
+        <span class="field-label">Description</span>
+        <input name="description-input" type="text" value="{{ expense.description }}" />
       </label>
 
-      <div class="grid grid-cols-2 gap-3">
-        <label class="block text-sm">
-          <span class="mb-1 block text-slate-300">Amount</span>
-          <input 
-            type="number"
-            name="amount-input"
-            step="0.01"
-            value="{{ '%.2f'|format(expense.amount) }}"
-            class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100" />
+      <div class="form-row-2">
+        <label>
+          <span class="field-label">Amount</span>
+          <input type="number" name="amount-input" step="0.01"
+                 value="{{ '%.2f'|format(expense.amount) }}" />
         </label>
-        <label class="block text-sm">
-          <span class="mb-1 block text-slate-300">Date</span>
+        <label>
+          <span class="field-label">Date</span>
           <input type="date" name="date-input"
-                 value="{{ expense.date.strftime('%Y-%m-%d') if expense.date else today }}"
-                 class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100" />
+                 value="{{ expense.date.strftime('%Y-%m-%d') if expense.date else today }}" />
         </label>
       </div>
 
-      <label class="block text-sm">
-        <span class="mb-1 block text-slate-300">Category</span>
-        <select name="category-input"
-                class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100">
+      <label>
+        <span class="field-label">Category</span>
+        <select name="category-input">
           {% for c in categories %}
-            <option value="{{c.name}}" {% if expense.category.name == c.name %}selected{% endif %}>{{c.name}}</option>
+            <option value="{{ c.name }}" {% if expense.category.name == c.name %}selected{% endif %}>{{ c.name }}</option>
           {% endfor %}
         </select>
       </label>
 
-      <div class="flex items-center gap-2">
-        <button class="rounded-xl bg-brand/20 hover:bg-brand/30 text-brand px-4 py-2 border border-brand/30"
-                type="submit">Save Changes</button>
-
-        <a class="rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-2 border border-slate-700"
-           href="{{ url_for('index') }}">Cancel</a>
+      <div class="form-actions">
+        <button class="btn btn-brand" type="submit">Save Changes</button>
+        <a class="btn btn-neutral" href="{{ url_for('index') }}">Cancel</a>
       </div>
     </form>
   </section>
