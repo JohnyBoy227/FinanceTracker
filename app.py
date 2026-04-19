@@ -1,12 +1,12 @@
 from flask import Flask, render_template, request, url_for, make_response, flash, redirect
-from flask_sqlalchemy import SQLAlchemy, or_
+from flask_sqlalchemy import SQLAlchemy
 from datetime import date, datetime
-from sqlalchemy import func
+from sqlalchemy import func, or_
 import os
 from dotenv import load_dotenv
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-from werkzeug.security import generate_password_hash, check_password_hash, decode_token
+from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
 
 app = Flask(__name__)
@@ -23,22 +23,35 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    return redirect(url_for('login'))
+
+@jwt.unauthorized_loader  
+def unauthorized_callback(reason):
+    return redirect(url_for('login'))
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String(30), nullable = False)
     email = db.Column(db.String(), nullable = False)
     password = db.Column(db.String(30), nullable = False)
 
+    categories = db.relationship('category', backref='user')
+    expenses = db.relationship('expense', backref='user')
+    rules = db.relationship('rule', backref='user')
+
     def set_password(self, password):
         self.password = generate_password_hash(password)
 
     def check_password(self, password):
-        return self.check_password_hash(self.password, password)
+        return check_password_hash(self.password, password)
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     name = db.Column(db.String(120), nullable = False)
     parent_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     parent = db.relationship("Category", backref="children", remote_side="Category.id")
     expenses = db.relationship('Expense', backref='category')
@@ -49,6 +62,7 @@ class Expense(db.Model):
     amount = db.Column(db.Float, nullable = False)
     date = db.Column(db.Date, nullable = False, default=date.today)
 
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
 
 class Rule(db.Model):
@@ -56,17 +70,18 @@ class Rule(db.Model):
     pattern = db.Column(db.String(120), nullable=False)
     priority = db.Column(db.Integer, nullable=False, default=0)
 
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     category = db.relationship('Category', backref='rules')
 
 with app.app_context():
     db.create_all()
 
-def get_categories():
-    return Category.query.all()
+def get_categories(user_id):
+    return Category.query.filter(Category.user_id == user_id)
 
-def get_rules():
-    return Rule.query.all()
+def get_rules(user_id):
+    return Rule.query.filter(Rule.user_id == user_id)
 
 def parse_date_or_none(str):
     if not str:
@@ -87,7 +102,9 @@ def get_current_user():
         return None
 
 @app.route("/")
+@jwt_required()
 def index():
+    user_id = get_jwt_identity()    
 
     start_date_str = (request.args.get("start-input") or "").strip()
     end_date_str = (request.args.get("end-input") or "").strip()
@@ -101,7 +118,7 @@ def index():
         start_date = end_date = None
         start_date_str = end_date_str = ""
 
-    q = Expense.query
+    q = Expense.query.filter(Expense.user_id == user_id)
     if start_date:
         q = q.filter(Expense.date >= start_date)
     if end_date:
@@ -117,7 +134,7 @@ def index():
     total = sum(e.amount for e in expenses)
 
     # pie chart
-    cat_q = db.session.query(Category.name, func.sum(Expense.amount)).join(Expense, Expense.category_id == Category.id)
+    cat_q = db.session.query(Category.name, func.sum(Expense.amount)).join(Expense, Expense.category_id == Category.id).filter(Expense.user_id == user_id)
 
     if start_date:
         cat_q = cat_q.filter(Expense.date >= start_date)
@@ -131,7 +148,7 @@ def index():
     cat_values = [round(float(s or 0), 2) for _, s in cat_rows]
 
     # day chart
-    day_q = db.session.query(Expense.date, func.sum(Expense.amount))
+    day_q = db.session.query(Expense.date, func.sum(Expense.amount)).filter(Expense.user_id == user_id)
 
     if start_date:
         day_q = day_q.filter(Expense.date >= start_date)
@@ -147,7 +164,7 @@ def index():
     return render_template(
         "index.html", 
         expenses=expenses,
-        categories=get_categories(),
+        categories=get_categories(user_id=user_id),
         total=total,
         start_str=start_date_str,
         end_str=end_date_str,
@@ -159,8 +176,11 @@ def index():
         day_values=day_values
     )
 
-@app.route("/register", methods=['POST'])
+@app.route("/register", methods=['GET','POST'])
 def register():
+    if request.method == 'GET':
+        return render_template('register.html')
+    
     username = (request.form.get("username-input") or "").strip()
     email = (request.form.get("email-input") or "").strip()
     password = (request.form.get("password-input") or "").strip()
@@ -170,7 +190,7 @@ def register():
         flash("Please fill all inputs")
         return redirect(url_for('register'))
     
-    user_query = User.query.filter_by(or_(username=username, email=email))
+    user_query = User.query.filter(or_(User.username == username, User.email == email)).first()
 
     if user_query is not None:
         flash("User already exists")
@@ -188,8 +208,11 @@ def register():
     flash("Registration sucessful", "Success")
     return redirect(url_for("login"))
 
-@app.route("/login", methods=['POST'])
+@app.route("/login", methods=['GET','POST'])
 def login():
+    if request.method == 'GET':
+        return render_template('login.html')
+    
     username = (request.form.get("username-input") or "").strip()
     password = (request.form.get("password-input") or "").strip()
 
@@ -219,13 +242,16 @@ def login():
     return response
 
 @app.route("/logout")
+@jwt_required()
 def logout():
     response = make_response(redirect(url_for('login')))
     response.delete_cookie('access_token')
     return response
 
 @app.route("/expenses/add", methods=['POST'])
+@jwt_required()
 def add_expense():
+    user_id = get_jwt_identity()
     description = (request.form.get("description-input") or "").strip()
     amount_str = (request.form.get("amount-input") or "").strip()
     category_name = (request.form.get("category-input") or "").strip()
@@ -235,7 +261,7 @@ def add_expense():
         flash("Please fill all inputs")
         return redirect(url_for("index"))
 
-    cat_obj = Category.query.filter_by(name=category_name).first()
+    cat_obj = Category.query.filter_by(name=category_name, user_id=user_id).first()
     if not cat_obj:
         flash(f"Category '{category_name}' does not exist", "error")
         return redirect(url_for("index"))
@@ -247,7 +273,7 @@ def add_expense():
     except ValueError:
         d = date.today()
 
-    e = Expense(description=description, amount=amount, category=cat_obj, date=d)
+    e = Expense(description=description, amount=amount, category=cat_obj, date=d, user_id=user_id)
     db.session.add(e)
     db.session.commit()
 
@@ -255,21 +281,27 @@ def add_expense():
     return redirect(url_for("index"))
 
 @app.route("/expenses/delete/<int:expense_id>", methods=['POST'])
+@jwt_required()
 def delete_expense(expense_id):
-    e = Expense.query.get_or_404(expense_id)
+    user_id = get_jwt_identity()
+    e = Expense.query.filter_by(id=expense_id, user_id=user_id).first_or_404()
     db.session.delete(e)
     db.session.commit()
     flash("Expense deleted", "Success")
     return redirect(url_for("index"))
 
 @app.route("/expenses/edit/<int:expense_id>", methods=['GET'])
+@jwt_required()
 def edit_expense_get(expense_id):
-    e = Expense.query.get_or_404(expense_id)
-    return render_template("edit.html", expense=e, categories=get_categories())
+    user_id = get_jwt_identity()
+    e = Expense.query.filter_by(id=expense_id, user_id=user_id).first_or_404()
+    return render_template("edit.html", expense=e, categories=get_categories(user_id=user_id))
 
 @app.route("/expenses/edit/<int:expense_id>", methods=['POST'])
+@jwt_required()
 def edit_expense(expense_id):
-    e = Expense.query.get_or_404(expense_id)
+    user_id = get_jwt_identity()
+    e = Expense.query.filter_by(user_id=user_id).first_or_404()
 
     description = (request.form.get("description-input") or "").strip()
     amount_str = (request.form.get("amount-input") or "").strip()
@@ -278,12 +310,12 @@ def edit_expense(expense_id):
 
     if not description or not amount_str or not category_name:
         flash("Please fill all inputs", "error")
-        return redirect(url_for("edit", expense_id=expense_id))
+        return redirect(url_for("edit_expense_get", expense_id=expense_id))
     
-    cat_obj = Category.query.filter_by(name=category_name).first()
+    cat_obj = Category.query.filter_by(name=category_name, user_id=user_id).first()
     if not cat_obj:
         flash(f"Category '{category_name}' does not exist", "error")
-        return redirect(url_for("edit", expense_id=expense_id))
+        return redirect(url_for("edit_expense_get", expense_id=expense_id))
     
     amount = float(amount_str)
     
@@ -302,17 +334,21 @@ def edit_expense(expense_id):
     return redirect(url_for("index"))
 
 @app.route("/categories", methods=['GET'])
+@jwt_required()
 def categories():
-    return render_template("categories.html", categories=get_categories())
+    user_id = get_jwt_identity()
+    return render_template("categories.html", categories=get_categories(user_id=user_id))
 
 @app.route("/categories/add", methods=['POST'])
+@jwt_required()
 def add_category():
+    user_id = get_jwt_identity()
     name = (request.form.get("name-input") or "").strip()
     if not name:
         flash("Please fill name")
         return redirect(url_for("categories"))
 
-    c = Category(name=name)
+    c = Category(name=name, user_id=user_id)
     db.session.add(c)
     db.session.commit()
 
@@ -320,8 +356,10 @@ def add_category():
     return redirect(url_for("categories"))
 
 @app.route("/categories/delete/<int:category_id>", methods=['POST'])
+@jwt_required()
 def delete_category(category_id):
-    c = Category.query.get_or_404(category_id)
+    user_id = get_jwt_identity()
+    c = Category.query.filter_by(user_id=user_id).first_or_404()
     
     for e in c.expenses:
         e.category = None
@@ -338,11 +376,15 @@ def delete_category(category_id):
     return redirect(url_for("categories"))
 
 @app.route("/rules", methods=['GET'])
+@jwt_required()
 def rules():
-    return render_template("rules.html", rules=get_rules(), categories=get_categories())
+    user_id = get_jwt_identity()
+    return render_template("rules.html", rules=get_rules(user_id=user_id), categories=get_categories(user_id=user_id))
 
 @app.route("/rules/add", methods=['POST'])
+@jwt_required()
 def add_rule():
+    user_id = get_jwt_identity()
     pattern = (request.form.get("pattern-input") or "").strip()
     priority = (request.form.get("priority-input") or "").strip()
     category_name = (request.form.get("category-input") or "").strip()
@@ -352,7 +394,7 @@ def add_rule():
 
     category_obj = Category.query.filter_by(name=category_name).first()
 
-    r = Rule(pattern=pattern, priority=priority, category=category_obj)
+    r = Rule(pattern=pattern, priority=priority, category=category_obj, user_id=user_id)
     db.session.add(r)
     db.session.commit()
 
@@ -360,24 +402,28 @@ def add_rule():
     return redirect(url_for("rules"))
 
 @app.route("/rules/delete/<int:rule_id>", methods=['POST'])
+@jwt_required()
 def delete_rule(rule_id):
-    r = Rule.query.get_or_404(rule_id)
+    user_id = get_jwt_identity()
+    r = Rule.query.filter_by(user_id=user_id).first_or_404()
     db.session.delete(r)
     db.session.commit()
     flash("Rule deleted", "Success")
     return redirect(url_for("rules"))
 
 @app.route("/rules/apply", methods=['POST'])
+@jwt_required()
 def apply_rules():
+    user_id = get_jwt_identity()
     def apply_category(description):
-        rules = db.session.query(Rule).order_by(Rule.priority.desc()).all()
+        rules = db.session.query(Rule).filter(Rule.user_id == user_id).order_by(Rule.priority.desc()).all()
         
         for rule in rules:
             if rule.pattern.casefold() in description.casefold():
                 return rule.category
         return None
 
-    expenses = Expense.query.filter(Expense.category_id == None)
+    expenses = Expense.query.filter(Expense.category_id == None, Expense.user_id == user_id)
     
     print(expenses.count(), "uncategorised expenses found")
 
