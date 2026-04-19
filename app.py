@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash, decode_token
+from datetime import timedelta
 
 app = Flask(__name__)
 
@@ -15,6 +16,9 @@ load_dotenv()
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SECRET_KEY'] = os.getenv("DB_SECRET_KEY")
 app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")
+app.config['JWT_TOKEN_LOCATION'] = ['cookies']
+app.config['JWT_COOKIE_CSRF_PROTECT'] = False
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=20)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
@@ -70,6 +74,16 @@ def parse_date_or_none(str):
     try:
         return datetime.strptime(str, "%Y-%m-%d").date()
     except ValueError:
+        return None
+
+def get_current_user():
+    token = request.cookies.get('access_token')
+    if not token:
+        return None
+    try:
+        decoded = decode_token(token)
+        return decoded['sub']
+    except Exception:
         return None
 
 @app.route("/")
@@ -193,10 +207,22 @@ def login():
         flash("Password incorect")
         return redirect(url_for('login'))
     
-    # Need to sort this auth properly
     access_token = create_access_token(identity=user_query.id)
+    
+    response = make_response(redirect(url_for('index')))
+    response.set_cookie(
+        'access_token',
+        access_token,
+        httponly=True,
+        samesite='Lax',
+    )
+    return response
 
-    return redirect(url_for('index'))
+@app.route("/logout")
+def logout():
+    response = make_response(redirect(url_for('login')))
+    response.delete_cookie('access_token')
+    return response
 
 @app.route("/expenses/add", methods=['POST'])
 def add_expense():
