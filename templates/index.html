@@ -74,9 +74,27 @@
     </section>
   </div>
 
-  <div class="quick-links">
-    <a href="{{ url_for('categories') }}">View categories</a>
-    <a href="{{ url_for('rules') }}">View rules</a>
+  <div class="summary-grid">
+    <div class="summary-card">
+      <p class="label">Money in</p>
+      <p class="value text-green">£{{ '%.2f'|format(money_in or 0) }}</p>
+      <p class="sub text-muted">this month</p>
+    </div>
+    <div class="summary-card">
+      <p class="label">Money out</p>
+      <p class="value text-red">£{{ '%.2f'|format(money_out or 0) }}</p>
+      <p class="sub text-muted">this month</p>
+    </div>
+    <div class="summary-card">
+      <p class="label">Expenses</p>
+      <p class="value">{{ expense_count or 0 }}</p>
+      <p class="sub text-muted">transactions</p>
+    </div>
+    <div class="summary-card">
+      <p class="label">Net</p>
+      <p class="value {{ 'text-green' if net >= 0 else 'text-red' }}">£{{ '%.2f'|format(net or 0) }}</p>
+      <p class="sub text-muted">remaining</p>
+    </div>
   </div>
 
   <div class="grid-charts">

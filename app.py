@@ -134,7 +134,7 @@ def index():
     total = sum(e.amount for e in expenses)
 
     # pie chart
-    cat_q = db.session.query(Category.name, func.sum(Expense.amount)).join(Expense, Expense.category_id == Category.id).filter(Expense.user_id == user_id)
+    cat_q = db.session.query(Category.name, func.sum(Expense.amount)).join(Expense, Expense.category_id == Category.id).filter(Expense.user_id == user_id, Expense.amount < 0)
 
     if start_date:
         cat_q = cat_q.filter(Expense.date >= start_date)
@@ -161,6 +161,10 @@ def index():
     day_labels = [d.isoformat() for d, _ in day_rows]
     day_values = [round(float(s or 0), 2) for _, s in day_rows]
 
+    money_in  = sum(e.amount for e in expenses if e.amount > 0)
+    money_out = sum(e.amount for e in expenses if e.amount < 0)
+    net = money_in + money_out
+
     return render_template(
         "index.html", 
         expenses=expenses,
@@ -173,7 +177,11 @@ def index():
         cat_labels=cat_labels,
         cat_values=cat_values,
         day_labels=day_labels,
-        day_values=day_values
+        day_values=day_values,
+        money_in=money_in,
+        money_out=abs(money_out),
+        net=net,
+        expense_count=len(expenses)
     )
 
 @app.route("/register", methods=['GET','POST'])
