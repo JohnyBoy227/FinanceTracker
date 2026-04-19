@@ -1,10 +1,12 @@
 from flask import Flask, render_template, request, url_for, make_response, flash, redirect
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy, or_
 from datetime import date, datetime
 from sqlalchemy import func
 import os
 from dotenv import load_dotenv
 from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from werkzeug.security import generate_password_hash, check_password_hash, decode_token
 
 app = Flask(__name__)
 
@@ -12,8 +14,22 @@ load_dotenv()
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SECRET_KEY'] = os.getenv("DB_SECRET_KEY")
+app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+jwt = JWTManager(app)
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    username = db.Column(db.String(30), nullable = False)
+    email = db.Column(db.String(), nullable = False)
+    password = db.Column(db.String(30), nullable = False)
+
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
+
+    def check_password(self, password):
+        return self.check_password_hash(self.password, password)
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key = True)
@@ -128,6 +144,59 @@ def index():
         day_labels=day_labels,
         day_values=day_values
     )
+
+@app.route("/register", methods=['POST'])
+def register():
+    username = (request.form.get("username-input") or "").strip()
+    email = (request.form.get("email-input") or "").strip()
+    password = (request.form.get("password-input") or "").strip()
+    confirm_password = (request.form.get("confirm-password-input") or "").strip()
+
+    if not username or not email or not password or not confirm_password:
+        flash("Please fill all inputs")
+        return redirect(url_for('register'))
+    
+    user_query = User.query.filter_by(or_(username=username, email=email))
+
+    if user_query is not None:
+        flash("User already exists")
+        return redirect(url_for('register'))
+    
+    new_user = User(
+        username = username,
+        email = email
+    )
+    new_user.set_password(password=password)
+
+    db.session.add(new_user)
+    db.session.commit()
+
+    flash("Registration sucessful", "Success")
+    return redirect(url_for("login"))
+
+@app.route("/login", methods=['POST'])
+def login():
+    username = (request.form.get("username-input") or "").strip()
+    password = (request.form.get("password-input") or "").strip()
+
+    if not username or not password:
+        flash("Please fill all inputs")
+        return redirect(url_for('login'))
+
+    user_query = User.query.filter_by(username=username).first()
+
+    if user_query is None:
+        flash("User does not exist")
+        return redirect(url_for('login'))
+
+    if not user_query.check_password(password=password):
+        flash("Password incorect")
+        return redirect(url_for('login'))
+    
+    # Need to sort this auth properly
+    access_token = create_access_token(identity=user_query.id)
+
+    return redirect(url_for('index'))
 
 @app.route("/expenses/add", methods=['POST'])
 def add_expense():

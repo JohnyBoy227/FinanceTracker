@@ -1,2 +1,3 @@
 DATABASE_URL="your-db-url"
 DB_SECRET_KEY="some-string"
+JWT_SECRET_KEY="some_string"
