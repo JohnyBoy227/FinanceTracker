@@ -35,11 +35,11 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String(30), nullable = False)
     email = db.Column(db.String(), nullable = False)
-    password = db.Column(db.String(30), nullable = False)
+    password = db.Column(db.Text, nullable = False)
 
-    categories = db.relationship('category', backref='user')
-    expenses = db.relationship('expense', backref='user')
-    rules = db.relationship('rule', backref='user')
+    categories = db.relationship('Category', backref='user')
+    expenses = db.relationship('Expense', backref='user')
+    rules = db.relationship('Rule', backref='user')
 
     def set_password(self, password):
         self.password = generate_password_hash(password)
@@ -104,7 +104,7 @@ def get_current_user():
 @app.route("/")
 @jwt_required()
 def index():
-    user_id = get_jwt_identity()    
+    user_id = int(get_jwt_identity())    
 
     start_date_str = (request.args.get("start-input") or "").strip()
     end_date_str = (request.args.get("end-input") or "").strip()
@@ -213,14 +213,14 @@ def login():
     if request.method == 'GET':
         return render_template('login.html')
     
-    username = (request.form.get("username-input") or "").strip()
+    email = (request.form.get("email-input") or "").strip()
     password = (request.form.get("password-input") or "").strip()
 
-    if not username or not password:
+    if not email or not password:
         flash("Please fill all inputs")
         return redirect(url_for('login'))
 
-    user_query = User.query.filter_by(username=username).first()
+    user_query = User.query.filter_by(email=email).first()
 
     if user_query is None:
         flash("User does not exist")
@@ -230,11 +230,11 @@ def login():
         flash("Password incorect")
         return redirect(url_for('login'))
     
-    access_token = create_access_token(identity=user_query.id)
+    access_token = create_access_token(identity=str(user_query.id))
     
     response = make_response(redirect(url_for('index')))
     response.set_cookie(
-        'access_token',
+        'access_token_cookie',
         access_token,
         httponly=True,
         samesite='Lax',
@@ -245,13 +245,13 @@ def login():
 @jwt_required()
 def logout():
     response = make_response(redirect(url_for('login')))
-    response.delete_cookie('access_token')
+    response.delete_cookie('access_token_cookie')
     return response
 
 @app.route("/expenses/add", methods=['POST'])
 @jwt_required()
 def add_expense():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     description = (request.form.get("description-input") or "").strip()
     amount_str = (request.form.get("amount-input") or "").strip()
     category_name = (request.form.get("category-input") or "").strip()
@@ -283,7 +283,7 @@ def add_expense():
 @app.route("/expenses/delete/<int:expense_id>", methods=['POST'])
 @jwt_required()
 def delete_expense(expense_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())    
     e = Expense.query.filter_by(id=expense_id, user_id=user_id).first_or_404()
     db.session.delete(e)
     db.session.commit()
@@ -293,14 +293,14 @@ def delete_expense(expense_id):
 @app.route("/expenses/edit/<int:expense_id>", methods=['GET'])
 @jwt_required()
 def edit_expense_get(expense_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())    
     e = Expense.query.filter_by(id=expense_id, user_id=user_id).first_or_404()
     return render_template("edit.html", expense=e, categories=get_categories(user_id=user_id))
 
 @app.route("/expenses/edit/<int:expense_id>", methods=['POST'])
 @jwt_required()
 def edit_expense(expense_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())    
     e = Expense.query.filter_by(user_id=user_id).first_or_404()
 
     description = (request.form.get("description-input") or "").strip()
@@ -336,13 +336,13 @@ def edit_expense(expense_id):
 @app.route("/categories", methods=['GET'])
 @jwt_required()
 def categories():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())    
     return render_template("categories.html", categories=get_categories(user_id=user_id))
 
 @app.route("/categories/add", methods=['POST'])
 @jwt_required()
 def add_category():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())    
     name = (request.form.get("name-input") or "").strip()
     if not name:
         flash("Please fill name")
@@ -358,8 +358,8 @@ def add_category():
 @app.route("/categories/delete/<int:category_id>", methods=['POST'])
 @jwt_required()
 def delete_category(category_id):
-    user_id = get_jwt_identity()
-    c = Category.query.filter_by(user_id=user_id).first_or_404()
+    user_id = int(get_jwt_identity())    
+    c = Category.query.filter_by(user_id=user_id, id=category_id).first_or_404()
     
     for e in c.expenses:
         e.category = None
@@ -378,13 +378,13 @@ def delete_category(category_id):
 @app.route("/rules", methods=['GET'])
 @jwt_required()
 def rules():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())    
     return render_template("rules.html", rules=get_rules(user_id=user_id), categories=get_categories(user_id=user_id))
 
 @app.route("/rules/add", methods=['POST'])
 @jwt_required()
 def add_rule():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())    
     pattern = (request.form.get("pattern-input") or "").strip()
     priority = (request.form.get("priority-input") or "").strip()
     category_name = (request.form.get("category-input") or "").strip()
@@ -404,7 +404,7 @@ def add_rule():
 @app.route("/rules/delete/<int:rule_id>", methods=['POST'])
 @jwt_required()
 def delete_rule(rule_id):
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())    
     r = Rule.query.filter_by(user_id=user_id).first_or_404()
     db.session.delete(r)
     db.session.commit()
@@ -414,7 +414,7 @@ def delete_rule(rule_id):
 @app.route("/rules/apply", methods=['POST'])
 @jwt_required()
 def apply_rules():
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())    
     def apply_category(description):
         rules = db.session.query(Rule).filter(Rule.user_id == user_id).order_by(Rule.priority.desc()).all()
         
