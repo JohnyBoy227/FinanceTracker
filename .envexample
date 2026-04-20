@@ -1,3 +1,6 @@
 DATABASE_URL="your-db-url"
 DB_SECRET_KEY="some-string"
 JWT_SECRET_KEY="some_string"
+APP_USERNAME="Username"
+APP_EMAIL="example@example.com"
+APP_PASSWORD="password"
