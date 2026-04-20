@@ -126,7 +126,7 @@ def index():
 
     if selected_category:
         if selected_category == "None":
-            q = q.join(Category).filter(Category.name.is_(None))
+            q = q.filter(Expense.category_id.is_(None))
         else:
             q = q.join(Category).filter(Category.name == selected_category)
 
@@ -148,7 +148,7 @@ def index():
     cat_values = [round(float(s or 0), 2) for _, s in cat_rows]
 
     # day chart
-    day_q = db.session.query(Expense.date, func.sum(Expense.amount)).filter(Expense.user_id == user_id)
+    day_q = db.session.query(Expense.date, func.sum(Expense.amount)).filter(Expense.user_id == user_id, Expense.amount <0)
 
     if start_date:
         day_q = day_q.filter(Expense.date >= start_date)
@@ -328,7 +328,7 @@ def edit_expense_get(expense_id):
 @jwt_required()
 def edit_expense(expense_id):
     user_id = int(get_jwt_identity())    
-    e = Expense.query.filter_by(user_id=user_id).first_or_404()
+    e = Expense.query.filter_by(user_id=user_id, id=expense_id).first_or_404()
 
     description = (request.form.get("description-input") or "").strip()
     amount_str = (request.form.get("amount-input") or "").strip()
@@ -432,7 +432,7 @@ def add_rule():
 @jwt_required()
 def delete_rule(rule_id):
     user_id = int(get_jwt_identity())    
-    r = Rule.query.filter_by(user_id=user_id).first_or_404()
+    r = Rule.query.filter_by(user_id=user_id, id=rule_id).first_or_404()
     db.session.delete(r)
     db.session.commit()
     flash("Rule deleted", "Success")
@@ -446,7 +446,7 @@ def apply_rules():
         rules = db.session.query(Rule).filter(Rule.user_id == user_id).order_by(Rule.priority.desc()).all()
         
         for rule in rules:
-            if rule.pattern.casefold() in description.casefold():
+            if rule.pattern.strip().casefold() in description.strip().casefold():
                 return rule.category
         return None
 
