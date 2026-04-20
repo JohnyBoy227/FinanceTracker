@@ -5,29 +5,43 @@
   <h1>Edit Rules</h1>
   <p class="subtitle">Add pattern-based rules to auto-categorise expenses.</p>
 
-  <section class="card form-section">
-    <form method="post" action="{{ url_for('add_rule') }}" class="form-stack">
-      <label>
-        <span class="field-label">Pattern</span>
-        <input name="pattern-input" type="text" value="" />
-      </label>
-      <label>
-        <span class="field-label">Priority</span>
-        <input name="priority-input" type="number" min="0" max="10" step="1" value="0" />
-      </label>
-      <label>
-        <span class="field-label">Category</span>
-        <select name="category-input">
-          {% for c in categories %}
-            <option value="{{ c.name }}" {% if selected_category == c.name %}selected{% endif %}>{{ c.name }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <div class="form-actions">
-        <button class="btn btn-brand" type="submit">Add</button>
-      </div>
-    </form>
-  </section>
+  <div class="grid-rules-file">
+    <section class="card form-section">
+      <form method="post" action="{{ url_for('add_rule') }}" class="form-stack">
+        <label>
+          <span class="field-label">Pattern</span>
+          <input name="pattern-input" type="text" value="" />
+        </label>
+        <label>
+          <span class="field-label">Priority</span>
+          <input name="priority-input" type="number" min="0" max="10" step="1" value="0" />
+        </label>
+        <label>
+          <span class="field-label">Category</span>
+          <select name="category-input">
+            {% for c in categories %}
+              <option value="{{ c.name }}" {% if selected_category == c.name %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <div class="form-actions">
+          <button class="btn btn-brand" type="submit">Add</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card file-upload">
+      <form method="POST" action="{{url_for('upload')}}" enctype="multipart/form-data">
+        <label>
+          <span class="field-label">File</span>
+          <input type="file" name="file" id="file">
+        </label>
+        <div class="form-actions">
+          <button class="btn btn-brand" type="submit">Upload</button>
+        </div>
+      </form>
+    </section>
+  </div>
 
   <form method="POST" action="{{ url_for('apply_rules') }}">
     <button class="btn btn-brand btn-full" type="submit">Apply rules</button>

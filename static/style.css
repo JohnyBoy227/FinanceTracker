@@ -119,6 +119,21 @@ h3 { font-size: 1rem;     font-weight: 600; margin-bottom: .5rem; }
   .grid-charts { grid-template-columns: 1fr 2fr; }
 }
 
+.grid-rules-file {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .grid-rules-file { grid-template-columns: 1fr 1fr; }
+}
+
+.grid-rules-file .form-section {
+  max-width: unset;
+  margin-bottom: 0;  
+}
+
 /* ---------- Card / Section ---------- */
 .card {
   background: var(--surface);
@@ -146,6 +161,39 @@ h3 { font-size: 1rem;     font-weight: 600; margin-bottom: .5rem; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: .75rem;
+}
+
+/* ---------- File upload ---------*/
+.file-upload {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.file-upload form {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.file-upload label {
+  color: var(--subtle);
+  margin-bottom: .25rem;
+}
+
+input[type="file"] {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-xl);
+  padding: .5rem .75rem;
+  color: var(--muted);
+  font-size: .875rem;
+  cursor: pointer;
+}
+
+input[type="file"]:hover {
+  border-color: var(--brand);
 }
 
 /* ---------- Labels & Inputs ---------- */

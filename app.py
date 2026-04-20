@@ -2,12 +2,15 @@ from flask import Flask, render_template, request, url_for, make_response, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import date, datetime
 from sqlalchemy import func, or_
-import os
 from dotenv import load_dotenv
 from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, decode_token
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from datetime import timedelta
+import csv
+import io
+import os
 
 app = Flask(__name__)
 
@@ -22,6 +25,8 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=20)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
+
+ALLOWED_EXTENSIONS = set(['csv'])
 
 @jwt.expired_token_loader
 def expired_token_callback(jwt_header, jwt_payload):
@@ -100,6 +105,10 @@ def get_current_user():
         return decoded['sub']
     except Exception:
         return None
+    
+def allowed_file(filename):
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route("/")
 @jwt_required()
@@ -465,8 +474,46 @@ def apply_rules():
 
     db.session.commit()
 
-    flash(f"{matched} expenses categorised")
+    flash(f"{matched} expenses categorised", "success")
     return redirect(url_for('rules'))
+
+@app.route('/upload', methods=['POST'])
+@jwt_required()
+def upload():
+    user_id = get_jwt_identity()
+    file = request.files['file']
+    if not file or not allowed_file(file.filename):
+        flash("No or incorrect file")
+        return redirect(url_for('rules'))
+
+    try:
+        file_stream = io.TextIOWrapper(file.stream, encoding='utf-8')
+        data = csv.DictReader(file_stream)
+        counter = 0
+        for row in data:
+            if row["Debit Amount"] != "":
+                amount = float(row["Debit Amount"].strip()) * -1
+            elif row["Credit amount"] != "":
+                amount = float(row["Credit amount"].strip())
+            else:
+                amount = 0
+                print("Both credit and debit amount == \"\"")
+            db.session.add(Expense(
+                description = row["Transaction description"],
+                amount = amount,
+                date = datetime.strptime(row["Transaction date"], "%Y-%m-%d").date(),
+                user_id=user_id
+            ))
+            counter += 1
+        db.session.commit()
+        flash(f"{counter} expenses added", "success")
+    except Exception as e:
+        db.session.rollback()
+        print("Error uploading file", e)        
+        flash("An error ocured uploading file", "error")
+
+    return redirect(url_for('rules'))
+
 
 if __name__ == "__main__":
     app.run(debug=True)
