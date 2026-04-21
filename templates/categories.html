@@ -11,6 +11,14 @@
         <span class="field-label">Name</span>
         <input name="name-input" type="text" value="" />
       </label>
+      <label>
+          <span class="field-label">Parent category</span>
+          <select name="category-input">
+            <option value="None">None</option>
+            {% for c in categories %}
+            <option value="{{ c.name }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
       <div class="form-actions">
         <button class="btn btn-brand" type="submit">Add</button>
       </div>

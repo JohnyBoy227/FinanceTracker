@@ -380,11 +380,18 @@ def categories():
 def add_category():
     user_id = int(get_jwt_identity())    
     name = (request.form.get("name-input") or "").strip()
+    parent_category_name = (request.form.get("category-input") or "").strip()
+
     if not name:
         flash("Please fill name")
         return redirect(url_for("categories"))
 
-    c = Category(name=name, user_id=user_id)
+    if parent_category_name == "None" or not parent_category_name:
+        parent_category_name = None
+
+    category_q = Category.query.filter_by(name=parent_category_name).first() if parent_category_name else None
+
+    c = Category(name=name, user_id=user_id, parent_id=category_q.id if category_q else None)
     db.session.add(c)
     db.session.commit()
 
