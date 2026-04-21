@@ -110,6 +110,25 @@ def allowed_file(filename):
     return '.' in filename and \
         filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def get_all_category_ids(category_name, user_id):
+    root = Category.query.filter_by(name=category_name, user_id=user_id).first()
+    print(f"category name '{category_name}'")
+    if not root:
+        return []
+    
+    ids = []
+    stack = [root]
+    while stack:
+        cat = stack.pop()
+        ids.append(cat.id)
+        children = Category.query.filter_by(parent_id=cat.id, user_id=user_id).all()
+        print(f"parent id: {cat.id}")
+        print(children)
+        stack.extend(children)
+    
+    print(ids)
+    return ids
+
 @app.route("/")
 @jwt_required()
 def index():
@@ -137,7 +156,7 @@ def index():
         if selected_category == "None":
             q = q.filter(Expense.category_id.is_(None))
         else:
-            q = q.join(Category).filter(Category.name == selected_category)
+            q = q.join(Category).filter(Category.id.in_(get_all_category_ids(category_name=selected_category, user_id=user_id)))
 
     expenses = q.order_by(Expense.date.desc(), Expense.id.desc()).all()
     total = sum(e.amount for e in expenses)
@@ -150,7 +169,7 @@ def index():
     if end_date:
         cat_q = cat_q.filter(Expense.date <= end_date)
     if selected_category:
-        cat_q = cat_q.filter(Category.name == selected_category)
+        cat_q = cat_q.filter(Category.id.in_(get_all_category_ids(category_name=selected_category, user_id=user_id)))
 
     cat_rows = cat_q.group_by(Category.name).all()
     cat_labels = [c for c, _ in cat_rows]
@@ -164,7 +183,7 @@ def index():
     if end_date:
         day_q = day_q.filter(Expense.date <= end_date)
     if selected_category:
-        day_q = day_q.join(Category).filter(Category.name == selected_category)
+        day_q = day_q.join(Category).filter(Category.id.in_(get_all_category_ids(category_name=selected_category, user_id=user_id)))
 
     day_rows = day_q.group_by(Expense.date).order_by(Expense.date).all()
     day_labels = [d.isoformat() for d, _ in day_rows]
@@ -389,7 +408,7 @@ def add_category():
     if parent_category_name == "None" or not parent_category_name:
         parent_category_name = None
 
-    category_q = Category.query.filter_by(name=parent_category_name).first() if parent_category_name else None
+    category_q = Category.query.filter_by(name=parent_category_name, user_id=user_id).first() if parent_category_name else None
 
     c = Category(name=name, user_id=user_id, parent_id=category_q.id if category_q else None)
     db.session.add(c)
@@ -476,8 +495,6 @@ def apply_rules():
         if category:
             expense.category = category
             matched += 1
-        else:
-            print("No rule matched:", expense.description)
 
     db.session.commit()
 
