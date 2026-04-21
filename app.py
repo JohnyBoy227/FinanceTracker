@@ -112,7 +112,6 @@ def allowed_file(filename):
 
 def get_all_category_ids(category_name, user_id):
     root = Category.query.filter_by(name=category_name, user_id=user_id).first()
-    print(f"category name '{category_name}'")
     if not root:
         return []
     
@@ -122,8 +121,6 @@ def get_all_category_ids(category_name, user_id):
         cat = stack.pop()
         ids.append(cat.id)
         children = Category.query.filter_by(parent_id=cat.id, user_id=user_id).all()
-        print(f"parent id: {cat.id}")
-        print(children)
         stack.extend(children)
     
     print(ids)
@@ -195,7 +192,7 @@ def index():
 
     return render_template(
         "index.html", 
-        expenses=expenses,
+        expenses=expenses[0:25],
         categories=get_categories(user_id=user_id),
         total=total,
         start_str=start_date_str,
