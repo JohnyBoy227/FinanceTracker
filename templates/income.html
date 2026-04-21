@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}View income · Expense Tracker{% endblock %}
+
+{% block content %}
+  <h1>Income</h1>
+  <p class="subtitle">Track income, filter by date/category, and visualize instantly.</p>
+
+  <div class="grid-filters-add">
+    <section class="card">
+      <h2>Filters</h2>
+      <form method="GET" action="{{ url_for('income') }}" class="filters-form">
+        <label>
+          <span class="field-label">Start</span>
+          <input name="start-input" value="{{ start_str or '' }}" type="date" />
+        </label>
+        <label>
+          <span class="field-label">End</span>
+          <input name="end-input" value="{{ end_str or '' }}" type="date" />
+        </label>
+        <label style="grid-column: span 2;">
+          <span class="field-label">Category</span>
+          <select name="category-input">
+            <option value="">All</option>
+            <option value="None">None</option>
+            {% for c in categories %}
+            <option value="{{ c.name }}" {% if selected_category == c.name %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <div class="filter-actions">
+          <button class="btn btn-brand" type="submit">Apply</button>
+          <a class="btn btn-neutral" href="{{ url_for('income') }}">Reset</a>
+        </div>
+      </form>
+    </section>
+    <div class="summary-card">
+      <p class="label">Money in</p>
+      <p class="value text-green">£{{ '%.2f'|format(money_in or 0) }}</p>
+    </div>
+  </div>
+  
+  <section class="table-section">
+    <div class="table-header">
+      <h2>Income</h2>
+    </div>
+    <div class="overflow-x">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th class="right">Amount</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if expenses %}
+            {% for e in expenses %}
+            <tr>
+              <td>{{ e.date.strftime("%d-%m-%Y") if e.date else '' }}</td>
+              <td>{{ e.description }}</td>
+              <td>{{ e.category.name }}</td>
+              <td class="right">£{{ '%.2f'|format(e.amount) }}</td>
+              <td class="right">
+                <div class="action-group">
+                  <a class="btn-edit" href="{{ url_for('edit_expense_get', expense_id=e.id) }}">EDIT</a>
+                  <form class="delete-form" method="POST" action="{{ url_for('delete_expense', expense_id=e.id) }}" onsubmit="return confirm('Are you sure you want to delete?')">
+                    <button class="btn-delete" type="submit">DELETE</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+          <tr class="empty-row">
+            <td colspan="5">No income yet — add your first one.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

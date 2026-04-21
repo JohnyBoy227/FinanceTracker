@@ -123,7 +123,6 @@ def get_all_category_ids(category_name, user_id):
         children = Category.query.filter_by(parent_id=cat.id, user_id=user_id).all()
         stack.extend(children)
     
-    print(ids)
     return ids
 
 @app.route("/")
@@ -535,6 +534,50 @@ def upload():
 
     return redirect(url_for('rules'))
 
+@app.route('/inocme', methods=['GET'])
+@jwt_required()
+def income():
+    user_id = get_jwt_identity()
+
+    start_date_str = (request.args.get("start-input") or "").strip()
+    end_date_str = (request.args.get("end-input") or "").strip()
+    selected_category = (request.args.get("category-input") or "").strip()
+
+    start_date = parse_date_or_none(start_date_str)
+    end_date = parse_date_or_none(end_date_str)
+
+    if start_date and end_date and end_date < start_date:
+        flash("End date cannot be before start date")
+        start_date = end_date = None
+        start_date_str = end_date_str = ""
+
+    q = Expense.query.filter(Expense.user_id == user_id, Expense.amount > 0)
+    if start_date:
+        q = q.filter(Expense.date >= start_date)
+    if end_date:
+        q = q.filter(Expense.date <= end_date)
+
+    if selected_category:
+        if selected_category == "None":
+            q = q.filter(Expense.category_id.is_(None))
+        else:
+            q = q.join(Category).filter(Category.id.in_(get_all_category_ids(category_name=selected_category, user_id=user_id)))
+
+    expenses = q.order_by(Expense.date.desc(), Expense.id.desc()).all()
+
+    money_in  = sum(e.amount for e in expenses if e.amount > 0)
+
+    return render_template(
+        "income.html", 
+        expenses=expenses[0:25],
+        categories=get_categories(user_id=user_id),
+        start_str=start_date_str,
+        end_str=end_date_str,
+        today=date.today().isoformat(),
+        selected_category=selected_category,
+        expense_count=len(expenses),
+        money_in=money_in
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)
