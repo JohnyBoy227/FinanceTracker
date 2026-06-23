@@ -8,7 +8,7 @@
   <div class="grid-filters-add">
     <section class="card">
       <h2>Filters</h2>
-      <form method="GET" action="{{ url_for('expences') }}" class="filters-form">
+      <form method="GET" action="{{ url_for('expenses') }}" class="filters-form">
         <label>
           <span class="field-label">Start</span>
           <input name="start-input" value="{{ start_str or '' }}" type="date" />

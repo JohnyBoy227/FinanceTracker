@@ -384,7 +384,7 @@ def edit_expense(expense_id):
     flash("Expense edited", "Success")
     return redirect(url_for("index"))
 
-@app.route("/expenses")
+@app.route("/expenses", methods=['GET'])
 @jwt_required()
 def expenses():
     user_id = get_jwt_identity()
@@ -418,7 +418,7 @@ def expenses():
     money_out = sum(e.amount for e in expenses if e.amount < 0)
 
     return render_template(
-        "income.html", 
+        "expenses.html", 
         expenses=expenses[0:25],
         categories=get_categories(user_id=user_id),
         start_str=start_date_str,
@@ -579,7 +579,7 @@ def upload():
 
     return redirect(url_for('rules'))
 
-@app.route('/inocme', methods=['GET'])
+@app.route('/income', methods=['GET'])
 @jwt_required()
 def income():
     user_id = get_jwt_identity()
