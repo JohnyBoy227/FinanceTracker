@@ -1,0 +1,23 @@
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/nginx/certs
+    networks:
+      - webnet
+
+  financeapp:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: financeapp
+    volumes: []
+    restart: unless-stopped
+    networks:
+      - webnet

@@ -528,8 +528,6 @@ def apply_rules():
 
     expenses = Expense.query.filter(Expense.category_id == None, Expense.user_id == user_id)
     
-    print(expenses.count(), "uncategorised expenses found")
-
     matched = 0
     for expense in expenses:
         category = apply_category(expense.description)
@@ -562,7 +560,6 @@ def upload():
                 amount = float(row["Credit amount"].strip())
             else:
                 amount = 0
-                print("Both credit and debit amount == \"\"")
             db.session.add(Expense(
                 description = row["Transaction description"],
                 amount = amount,
@@ -574,7 +571,6 @@ def upload():
         flash(f"{counter} expenses added", "success")
     except Exception as e:
         db.session.rollback()
-        print("Error uploading file", e)        
         flash("An error ocured uploading file", "error")
 
     return redirect(url_for('rules'))
@@ -625,4 +621,4 @@ def income():
     )
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
