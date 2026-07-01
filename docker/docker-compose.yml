@@ -3,12 +3,12 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     build:
-      context: .
-      dockerfile: Dockerfile.dev
+      context: ..
+      dockerfile: docker/Dockerfile.dev
     ports:
       - "5000:5000"
     volumes:
-      - .:/app
+      - ..:/app
     depends_on:
       - postgres
     networks:
