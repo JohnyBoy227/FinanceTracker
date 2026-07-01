@@ -14,7 +14,7 @@ services:
 
   financeapp:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile.prod
     container_name: financeapp
     volumes: []
